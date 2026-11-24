@@ -1,13 +1,14 @@
 /* --- SCROLL REVEAL ANIMATION --- */
 const observerOptions = {
-    threshold: 0.15,
-    rootMargin: '0px 0px -50px 0px'
+    threshold: 0.05,
+    rootMargin: '0px 0px -20px 0px'
 };
 
 const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
         if (entry.isIntersecting) {
             entry.target.classList.add('show');
+            observer.unobserve(entry.target);
         }
     });
 }, observerOptions);
@@ -15,6 +16,18 @@ const observer = new IntersectionObserver((entries) => {
 document.querySelectorAll('.hidden').forEach((el) => {
     observer.observe(el);
 });
+
+/* --- FALLBACK REVEAL FOR ALREADY-VISIBLE / SCROLLING ELEMENTS --- */
+function revealVisibleElements() {
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    document.querySelectorAll('.hidden:not(.show)').forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < windowHeight * 0.95 && rect.bottom > 0) {
+            el.classList.add('show');
+            observer.unobserve(el);
+        }
+    });
+}
 
 /* --- TIMELINE SCROLL GLOW LINE --- */
 const timelines = document.querySelectorAll('.timeline');
@@ -38,10 +51,6 @@ function updateTimelines() {
         }
     });
 }
-
-window.addEventListener('scroll', updateTimelines, { passive: true });
-window.addEventListener('resize', updateTimelines, { passive: true });
-window.addEventListener('load', updateTimelines);
 
 /* --- HORIZONTAL SCROLL TRACK (IF PRESENT ON DESKTOP) --- */
 const scrollWrappers = document.querySelectorAll('.horizontal-scroll-wrapper');
@@ -70,8 +79,16 @@ function updateHorizontalTracks() {
     });
 }
 
-window.addEventListener('scroll', updateHorizontalTracks, { passive: true });
-window.addEventListener('resize', updateHorizontalTracks, { passive: true });
+function handleScrollAndResize() {
+    revealVisibleElements();
+    updateTimelines();
+    updateHorizontalTracks();
+}
+
+window.addEventListener('scroll', handleScrollAndResize, { passive: true });
+window.addEventListener('resize', handleScrollAndResize, { passive: true });
+window.addEventListener('load', handleScrollAndResize);
+setTimeout(revealVisibleElements, 150);
 
 /* --- PROJECT MODAL CONTROLS --- */
 const modal = document.getElementById('projectModal');
